@@ -65,6 +65,8 @@
 
             const CONFIG = {
                 bufferRange: 2, // Number of slides to preload in each direction (up/down)
+                cacheName: 'content-cache-v1',
+                cacheLimit: 10 // Store the last 10 assets (10 gifs + 10 audio clips)
             };
 
             const STATE = {
@@ -91,6 +93,33 @@
             };
             
             //======================================================================
+            // CACHING LOGIC
+            //======================================================================
+
+            /**
+             * Fetches an asset, caches it, and ensures the cache does not exceed its size limit.
+             * @param {string} url - The URL of the asset to fetch and cache.
+             * @returns {Promise<Response>} - The response object for the asset.
+             */
+            async function fetchAndCache(url) {
+                const cache = await caches.open(CONFIG.cacheName);
+                const cachedResponse = await cache.match(url);
+                
+                if (cachedResponse) return cachedResponse;
+
+                const networkResponse = await fetch(url, { mode: 'cors' });
+                if (networkResponse.ok) {
+                    await cache.put(url, networkResponse.clone());
+                    // Clean up old cache entries if limit is exceeded
+                    const keys = await cache.keys();
+                    if (keys.length > CONFIG.cacheLimit * 2) { // *2 for gif and audio
+                        await cache.delete(keys[0]); 
+                    }
+                }
+                return networkResponse;
+            }
+
+            //======================================================================
             // API & ASSET FETCHING
             //======================================================================
 
@@ -115,68 +144,79 @@
                 return slide;
             }
 
-            function addContentToSlide(slide, content) {
+            async function addContentToSlide(slide, content) {
                 if (slide.querySelector('audio') || !content) return;
-                slide.style.backgroundImage = `url(${content.gif})`;
-                
-                const audio = document.createElement('audio');
-                audio.src = content.audio;
-                audio.loop = true;
-                audio.playsInline = true;
-                audio.preload = 'auto';
-                audio.muted = STATE.isMuted;
 
-                const quoteContainer = document.createElement('div');
-                quoteContainer.className = 'absolute inset-0 flex items-center justify-center p-8 bg-black bg-opacity-40';
-                
-                const quoteText = document.createElement('h1');
-                quoteText.className = 'text-3xl md:text-4xl font-bold text-center text-white text-shadow-outline';
-                quoteText.textContent = content.quote;
-                quoteContainer.appendChild(quoteText);
+                try {
+                    // Fetch assets from cache or network
+                    const [gifResponse, audioResponse] = await Promise.all([
+                        fetchAndCache(content.gif),
+                        fetchAndCache(content.audio)
+                    ]);
 
-                const overlay = document.createElement('div');
-                overlay.className = 'absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-300';
+                    const [gifBlob, audioBlob] = await Promise.all([
+                        gifResponse.blob(),
+                        audioResponse.blob()
+                    ]);
 
-                const progressBarContainer = document.createElement('div');
-                progressBarContainer.className = 'absolute bottom-0 left-0 w-full h-1 bg-gray-500 bg-opacity-50';
-                const progressBar = document.createElement('div');
-                progressBar.className = 'h-full bg-white transition-all duration-100 ease-linear';
-                progressBar.style.width = '0%';
-                progressBarContainer.appendChild(progressBar);
+                    const gifUrl = URL.createObjectURL(gifBlob);
+                    const audioUrl = URL.createObjectURL(audioBlob);
 
-                const actionButtonsContainer = document.createElement('div');
-                actionButtonsContainer.className = 'action-buttons absolute top-5 right-5 flex flex-col space-y-4 z-10';
-                const downloadButton = document.createElement('button');
-                downloadButton.className = 'p-3 rounded-full bg-black bg-opacity-50 hover:bg-opacity-75 transition-opacity';
-                downloadButton.innerHTML = ICONS.download;
-                downloadButton.title = "Download Image";
-                downloadButton.addEventListener('click', () => generateImageForAction(content, { isShare: false }));
-                
-                const shareButton = document.createElement('button');
-                shareButton.className = 'p-3 rounded-full bg-black bg-opacity-50 hover:bg-opacity-75 transition-opacity';
-                shareButton.innerHTML = ICONS.share;
-                shareButton.title = "Share Image";
-                shareButton.addEventListener('click', () => generateImageForAction(content, { isShare: true }));
-                
-                const copyLinkButton = document.createElement('button');
-                copyLinkButton.className = 'p-3 rounded-full bg-black bg-opacity-50 hover:bg-opacity-75 transition-opacity';
-                copyLinkButton.innerHTML = ICONS.copyLink;
-                copyLinkButton.title = "Copy Link";
-                copyLinkButton.addEventListener('click', () => handleCopyLink(content));
+                    slide.style.backgroundImage = `url(${gifUrl})`;
+                    
+                    const audio = document.createElement('audio');
+                    audio.src = audioUrl;
+                    audio.loop = true;
+                    audio.playsInline = true;
+                    audio.preload = 'auto';
+                    audio.muted = STATE.isMuted;
+                    // ... rest of the function remains the same ...
+                    const quoteContainer = document.createElement('div');
+                    quoteContainer.className = 'absolute inset-0 flex items-center justify-center p-8 bg-black bg-opacity-40';
+                    const quoteText = document.createElement('h1');
+                    quoteText.className = 'text-3xl md:text-4xl font-bold text-center text-white text-shadow-outline';
+                    quoteText.textContent = content.quote;
+                    quoteContainer.appendChild(quoteText);
+                    const overlay = document.createElement('div');
+                    overlay.className = 'absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-300';
+                    const progressBarContainer = document.createElement('div');
+                    progressBarContainer.className = 'absolute bottom-0 left-0 w-full h-1 bg-gray-500 bg-opacity-50';
+                    const progressBar = document.createElement('div');
+                    progressBar.className = 'h-full bg-white transition-all duration-100 ease-linear';
+                    progressBar.style.width = '0%';
+                    progressBarContainer.appendChild(progressBar);
+                    const actionButtonsContainer = document.createElement('div');
+                    actionButtonsContainer.className = 'action-buttons absolute top-5 right-5 flex flex-col space-y-4 z-10';
+                    const downloadButton = document.createElement('button');
+                    downloadButton.className = 'p-3 rounded-full bg-black bg-opacity-50 hover:bg-opacity-75 transition-opacity';
+                    downloadButton.innerHTML = ICONS.download;
+                    downloadButton.title = "Download Image";
+                    downloadButton.addEventListener('click', () => generateImageForAction(content, { isShare: false }));
+                    const shareButton = document.createElement('button');
+                    shareButton.className = 'p-3 rounded-full bg-black bg-opacity-50 hover:bg-opacity-75 transition-opacity';
+                    shareButton.innerHTML = ICONS.share;
+                    shareButton.title = "Share Image";
+                    shareButton.addEventListener('click', () => generateImageForAction(content, { isShare: true }));
+                    const copyLinkButton = document.createElement('button');
+                    copyLinkButton.className = 'p-3 rounded-full bg-black bg-opacity-50 hover:bg-opacity-75 transition-opacity';
+                    copyLinkButton.innerHTML = ICONS.copyLink;
+                    copyLinkButton.title = "Copy Link";
+                    copyLinkButton.addEventListener('click', () => handleCopyLink(content));
+                    actionButtonsContainer.append(downloadButton, shareButton, copyLinkButton);
+                    audio.addEventListener('timeupdate', () => {
+                        const progress = (audio.currentTime / audio.duration) * 100;
+                        progressBar.style.width = `${progress || 0}%`;
+                    });
+                    slide.addEventListener('click', (e) => {
+                        if (e.target.closest('.mute-button') || e.target.closest('.action-buttons')) return;
+                        togglePlayPause(audio, overlay);
+                    });
+                    slide.append(audio, quoteContainer, overlay, progressBarContainer, actionButtonsContainer);
 
-                actionButtonsContainer.append(downloadButton, shareButton, copyLinkButton);
-                
-                audio.addEventListener('timeupdate', () => {
-                    const progress = (audio.currentTime / audio.duration) * 100;
-                    progressBar.style.width = `${progress || 0}%`;
-                });
-
-                slide.addEventListener('click', (e) => {
-                    if (e.target.closest('.mute-button') || e.target.closest('.action-buttons')) return;
-                    togglePlayPause(audio, overlay);
-                });
-                
-                slide.append(audio, quoteContainer, overlay, progressBarContainer, actionButtonsContainer);
+                } catch (error) {
+                    console.error("Failed to load content for slide:", error);
+                    // Optionally, show an error state on the slide itself
+                }
             }
 
             function createMuteButton() {
@@ -195,10 +235,6 @@
             // PLAYER & IMAGE GENERATION LOGIC
             //======================================================================
 
-            /**
-             * Copies a generated shareable link to the clipboard.
-             * @param {object} content - The content object for the current slide.
-             */
             function handleCopyLink(content) {
                 const baseUrl = window.location.origin + window.location.pathname;
                 const queryParams = new URLSearchParams({
@@ -207,7 +243,6 @@
                     quote: content.quote
                 });
                 const shareUrl = `${baseUrl}?${queryParams.toString()}`;
-
                 navigator.clipboard.writeText(shareUrl).then(() => {
                     alert('Link copied to clipboard!');
                 }).catch(err => {
@@ -243,7 +278,6 @@
                     const image = new Image();
                     image.crossOrigin = "anonymous";
                     image.src = imageUrl;
-
                     image.onload = () => {
                         loadingProgress.textContent = 'Generating...';
                         const canvas = document.createElement('canvas');
@@ -268,7 +302,6 @@
                         
                         canvas.toBlob(async (blob) => {
                             const imageFile = new File([blob], 'inspirational-quote.png', { type: 'image/png' });
-
                             if (isShare) {
                                 if (navigator.canShare && navigator.canShare({ files: [imageFile] })) {
                                     await navigator.share({
@@ -291,7 +324,6 @@
                             loadingOverlay.classList.remove('flex');
                         }, 'image/png');
                     };
-
                     image.onerror = () => { throw new Error('Failed to load image for canvas.'); };
                 } catch (error) {
                     console.error('Error generating image:', error);
@@ -334,11 +366,14 @@
                     const index = parseInt(slide.dataset.index, 10);
                     const isInBufferZone = Math.abs(index - STATE.currentVideoIndex) <= CONFIG.bufferRange;
                     const hasContent = slide.querySelector('audio');
-
                     if (isInBufferZone) {
                         if (!hasContent) addContentToSlide(slide, STATE.contentSources[index]);
                     } else {
-                        if (hasContent) slide.innerHTML = '';
+                        if (hasContent) {
+                            const objectUrl = slide.querySelector('audio').src;
+                            URL.revokeObjectURL(objectUrl); // Clean up blob URL
+                            slide.innerHTML = '';
+                        }
                     }
                 });
             }
@@ -369,13 +404,27 @@
                     if (e.key === 'ArrowUp') slides[STATE.currentVideoIndex - 1]?.scrollIntoView();
                 });
             }
+
+            function requestAppFullScreen() {
+                const elem = document.documentElement;
+                if (elem.requestFullscreen) {
+                    elem.requestFullscreen();
+                } else if (elem.mozRequestFullScreen) { /* Firefox */
+                    elem.mozRequestFullScreen();
+                } else if (elem.webkitRequestFullscreen) { /* Chrome, Safari & Opera */
+                    elem.webkitRequestFullscreen();
+                } else if (elem.msRequestFullscreen) { /* IE/Edge */
+                    elem.msRequestFullscreen();
+                }
+            }
             
             //======================================================================
             // INITIALIZATION
             //======================================================================
 
             async function init() {
-                // Check for shared content in the URL on page load.
+                videoContainer.addEventListener('scroll', requestAppFullScreen, { once: true });
+                
                 const urlParams = new URLSearchParams(window.location.search);
                 if (urlParams.has('gif') && urlParams.has('audio') && urlParams.has('quote')) {
                     const sharedContent = {
@@ -383,11 +432,10 @@
                         audio: urlParams.get('audio'),
                         quote: urlParams.get('quote'),
                     };
-                    // Add the shared content as the first item to be loaded.
                     STATE.contentSources.push(sharedContent);
                 }
 
-                await loadMoreContent(); // Load the rest of the content from the API.
+                await loadMoreContent();
                 manageBuffer();
                 createMuteButton();
                 setupKeyboardControls();
