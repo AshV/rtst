@@ -96,8 +96,8 @@
             async function fetchContent() {
                 console.log("Fetching content...");
                 const mockApiContent = [
-                    { quote: "The only way to do great work is to love what you do.", gif: "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExNTFkbWRscTY4aDZnM3J2dzd0djM4NTY0eGRkcnJkcGc5cnJ2eGU5byZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/U3qYN8S0j3piM/giphy.gif", audio: "https://raw.githubusercontent.com/AshV/rtst/refs/heads/main/file_example_MP3_700KB.mp3" },
-                    { quote: "Success is not final, failure is not fatal: it is the courage to continue that counts.", gif: "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3E1azN6ZzZ3Zm1vcnlla2d5c3h5a3Z3cHIyM3hoYWZreDBjYmZnZSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/yoJC2GnSClbPOkV0eA/giphy.gif", audio: "https://raw.githubusercontent.com/AshV/rtst/refs/heads/main/file_example_MP3_700KB.mp3" },
+                    { quote: "The only way to do great work is to love what you do.", gif: "https://www.ashishvishwakarma.com/images/pic01.jpg", audio: "https://cdn.pixabay.com/audio/2022/08/04/audio_2dde6b9fa9.mp3" },
+                    { quote: "Success is not final, failure is not fatal: it is the courage to continue that counts.", gif: "https://www.ashishvishwakarma.com/images/pic01.jpg", audio: "https://cdn.pixabay.com/audio/2024/02/09/audio_205041a334.mp3" },
                 ];
                 await new Promise(resolve => setTimeout(resolve, 500));
                 return mockApiContent.sort(() => Math.random() - 0.5);
@@ -222,11 +222,15 @@
                 loadingProgress.textContent = 'Loading image...';
 
                 try {
-                    const proxyUrl = 'https://cors-proxy.canvas-creations.workers.dev/?';
-                    const imageUrl = proxyUrl + encodeURIComponent(content.gif);
+                    // Removed the proxy URL based on the assumption that
+                    // all GIF images are now served from the same origin.
+                    const imageUrl = content.gif;
 
                     const image = new Image();
-                    image.crossOrigin = "anonymous"; // Important for canvas security
+                    // crossOrigin is set to "anonymous" to handle cases where the same-origin
+                    // server still requires CORS headers for canvas operations. If the images are
+                    // truly same-origin (same protocol, domain, and port), this can be removed.
+                    image.crossOrigin = "anonymous";
                     image.src = imageUrl;
 
                     image.onload = () => {
