@@ -96,8 +96,8 @@
             async function fetchContent() {
                 console.log("Fetching content...");
                 const mockApiContent = [
-                    { quote: "The only way to do great work is to love what you do.", gif: "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExNTFkbWRscTY4aDZnM3J2dzd0djM4NTY0eGRkcnJkcGc5cnJ2eGU5byZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/U3qYN8S0j3piM/giphy.gif", audio: "https://file-examples.com/storage/fe004d38a368eeea194ea01/2017/11/file_example_MP3_700KB.mp3" },
-                    { quote: "Success is not final, failure is not fatal: it is the courage to continue that counts.", gif: "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3E1azN6ZzZ3Zm1vcnlla2d5c3h5a3Z3cHIyM3hoYWZreDBjYmZnZSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/yoJC2GnSClbPOkV0eA/giphy.gif", audio: "https://file-examples.com/storage/fe004d38a368eeea194ea01/2017/11/file_example_MP3_700KB.mp3" },
+                    { quote: "The only way to do great work is to love what you do.", gif: "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExNTFkbWRscTY4aDZnM3J2dzd0djM4NTY0eGRkcnJkcGc5cnJ2eGU5byZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/U3qYN8S0j3piM/giphy.gif", audio: "https://raw.githubusercontent.com/AshV/rtst/refs/heads/main/file_example_MP3_700KB.mp3" },
+                    { quote: "Success is not final, failure is not fatal: it is the courage to continue that counts.", gif: "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3E1azN6ZzZ3Zm1vcnlla2d5c3h5a3Z3cHIyM3hoYWZreDBjYmZnZSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/yoJC2GnSClbPOkV0eA/giphy.gif", audio: "https://raw.githubusercontent.com/AshV/rtst/refs/heads/main/file_example_MP3_700KB.mp3" },
                 ];
                 await new Promise(resolve => setTimeout(resolve, 500));
                 return mockApiContent.sort(() => Math.random() - 0.5);
