@@ -98,11 +98,24 @@
                 await new Promise(resolve => setTimeout(resolve, 500));
                 return mockApiContent.sort(() => Math.random() - 0.5);
             }
-
+            
             const fetchUrlAsUint8Array = async (url) => {
-                const response = await fetch(url);
-                const buffer = await response.arrayBuffer();
-                return new Uint8Array(buffer);
+                // Using a CORS proxy to prevent cross-origin request errors when fetching assets.
+                // This is necessary because the browser's security policy blocks direct requests
+                // to different domains (e.g., giphy, pixabay) from a script.
+                const proxyUrl = 'https://cors-proxy.canvas-creations.workers.dev/?';
+                try {
+                    const response = await fetch(proxyUrl + encodeURIComponent(url));
+                    if (!response.ok) {
+                        throw new Error(`Failed to fetch proxied asset: ${response.statusText} for URL: ${url}`);
+                    }
+                    const buffer = await response.arrayBuffer();
+                    return new Uint8Array(buffer);
+                } catch (error) {
+                    console.error("Fetch error:", error);
+                    // Re-throw the error to be caught by the calling function
+                    throw error;
+                }
             };
 
             //======================================================================
@@ -210,6 +223,7 @@
                     const ffmpeg = await getFfmpegInstance();
                     loadingProgress.textContent = 'Fetching assets...';
                     
+                    // Fetch all required assets in parallel.
                     const [gifData, audioData, fontData] = await Promise.all([
                         fetchUrlAsUint8Array(content.gif),
                         fetchUrlAsUint8Array(content.audio),
@@ -217,20 +231,25 @@
                     ]);
 
                     loadingProgress.textContent = 'Preparing video...';
+                    
+                    // Write files to ffmpeg's virtual file system
                     await ffmpeg.writeFile('input.gif', gifData);
                     await ffmpeg.writeFile('input.mp3', audioData);
                     await ffmpeg.writeFile('Roboto.ttf', fontData);
+                    // Write the quote to a text file to avoid command-line escaping issues.
+                    await ffmpeg.writeFile('quote.txt', content.quote);
                     
-                    const escapedQuote = content.quote.replace(/'/g, "'\\''");
-
+                    // The ffmpeg command to overlay text on the GIF and combine with audio.
                     await ffmpeg.exec([
                         '-i', 'input.gif',
                         '-i', 'input.mp3',
-                        '-vf', `drawtext=text='${escapedQuote}':fontfile=Roboto.ttf:fontsize=48:fontcolor=white:x=(w-text_w)/2:y=(h*0.8-text_h)/2:box=1:boxcolor=black@0.5:boxborderw=10`,
-                        '-c:v', 'libx264',
-                        '-c:a', 'aac',
-                        '-pix_fmt', 'yuv420p', // For broader compatibility
-                        '-shortest',
+                        // Use the 'drawtext' video filter.
+                        // We load the text from 'quote.txt' to handle special characters safely.
+                        '-vf', `drawtext=textfile=quote.txt:fontfile=Roboto.ttf:fontsize=48:fontcolor=white:x=(w-text_w)/2:y=(h*0.75-text_h)/2:box=1:boxcolor=black@0.5:boxborderw=10`,
+                        '-c:v', 'libx264',      // Video codec
+                        '-c:a', 'aac',          // Audio codec
+                        '-pix_fmt', 'yuv420p',  // Pixel format for broader compatibility
+                        '-shortest',            // Finish encoding when the shortest input stream ends
                         'output.mp4'
                     ]);
 
@@ -258,7 +277,7 @@
                     }
                 } catch (error) {
                     console.error('Error generating video:', error);
-                    alert('Could not generate the video. Please try again.');
+                    alert('Could not generate the video. Please try again. Check the console for more details.');
                 } finally {
                     loadingOverlay.classList.add('hidden');
                     loadingOverlay.classList.remove('flex');
