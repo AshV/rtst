@@ -86,7 +86,8 @@
                 volumeUp: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /></svg>`,
                 volumeOff: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" clip-rule="evenodd" /><path stroke-linecap="round" stroke-linejoin="round" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" /></svg>`,
                 download: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>`,
-                share: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.882 13.07 9.283 13 9.683 13h4.634c.4 0 .802.07 1.001.342M8.684 13.342c.711 2.22 2.653 4.272 4.634 4.272s3.923-2.052 4.634-4.272m-8.684 0c.414-.522 1.055-.916 1.742-1.144M10 20h4a2 2 0 002-2V6a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>`
+                share: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.882 13.07 9.283 13 9.683 13h4.634c.4 0 .802.07 1.001.342M8.684 13.342c.711 2.22 2.653 4.272 4.634 4.272s3.923-2.052 4.634-4.272m-8.684 0c.414-.522 1.055-.916 1.742-1.144M10 20h4a2 2 0 002-2V6a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>`,
+                copyLink: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>`
             };
             
             //======================================================================
@@ -96,8 +97,8 @@
             async function fetchContent() {
                 console.log("Fetching content...");
                 const mockApiContent = [
-                    { quote: "The only way to do great work is to love what you do.", gif: "https://www.ashishvishwakarma.com/images/pic01.jpg", audio: "https://cdn.pixabay.com/audio/2022/08/04/audio_2dde6b9fa9.mp3" },
-                    { quote: "Success is not final, failure is not fatal: it is the courage to continue that counts.", gif: "https://www.ashishvishwakarma.com/images/pic01.jpg", audio: "https://cdn.pixabay.com/audio/2024/02/09/audio_205041a334.mp3" },
+                    { quote: "The only way to do great work is to love what you do.", gif: "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExNTFkbWRscTY4aDZnM3J2dzd0djM4NTY0eGRkcnJkcGc5cnJ2eGU5byZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/U3qYN8S0j3piM/giphy.gif", audio: "https://cdn.pixabay.com/audio/2022/08/04/audio_2dde6b9fa9.mp3" },
+                    { quote: "Success is not final, failure is not fatal: it is the courage to continue that counts.", gif: "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3E1azN6ZzZ3Zm1vcnlla2d5c3h5a3Z3cHIyM3hoYWZreDBjYmZnZSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/yoJC2GnSClbPOkV0eA/giphy.gif", audio: "https://cdn.pixabay.com/audio/2024/02/09/audio_205041a334.mp3" },
                 ];
                 await new Promise(resolve => setTimeout(resolve, 500));
                 return mockApiContent.sort(() => Math.random() - 0.5);
@@ -144,18 +145,26 @@
                 progressBarContainer.appendChild(progressBar);
 
                 const actionButtonsContainer = document.createElement('div');
-                actionButtonsContainer.className = 'action-buttons absolute top-5 right-5 flex flex-col space-y-4 z-10'; // <-- Position updated
+                actionButtonsContainer.className = 'action-buttons absolute top-5 right-5 flex flex-col space-y-4 z-10';
                 const downloadButton = document.createElement('button');
                 downloadButton.className = 'p-3 rounded-full bg-black bg-opacity-50 hover:bg-opacity-75 transition-opacity';
                 downloadButton.innerHTML = ICONS.download;
                 downloadButton.title = "Download Image";
                 downloadButton.addEventListener('click', () => generateImageForAction(content, { isShare: false }));
+                
                 const shareButton = document.createElement('button');
                 shareButton.className = 'p-3 rounded-full bg-black bg-opacity-50 hover:bg-opacity-75 transition-opacity';
                 shareButton.innerHTML = ICONS.share;
                 shareButton.title = "Share Image";
                 shareButton.addEventListener('click', () => generateImageForAction(content, { isShare: true }));
-                actionButtonsContainer.append(downloadButton, shareButton);
+                
+                const copyLinkButton = document.createElement('button');
+                copyLinkButton.className = 'p-3 rounded-full bg-black bg-opacity-50 hover:bg-opacity-75 transition-opacity';
+                copyLinkButton.innerHTML = ICONS.copyLink;
+                copyLinkButton.title = "Copy Link";
+                copyLinkButton.addEventListener('click', () => handleCopyLink(content));
+
+                actionButtonsContainer.append(downloadButton, shareButton, copyLinkButton);
                 
                 audio.addEventListener('timeupdate', () => {
                     const progress = (audio.currentTime / audio.duration) * 100;
@@ -187,23 +196,32 @@
             //======================================================================
 
             /**
-             * Wraps text to fit inside a canvas.
-             * @param {CanvasRenderingContext2D} context - The canvas context.
-             * @param {string} text - The text to wrap.
-             * @param {number} x - The starting x-coordinate.
-             * @param {number} y - The starting y-coordinate.
-             * @param {number} maxWidth - The maximum width of a line.
-             * @param {number} lineHeight - The height of each line.
+             * Copies a generated shareable link to the clipboard.
+             * @param {object} content - The content object for the current slide.
              */
+            function handleCopyLink(content) {
+                const baseUrl = window.location.origin + window.location.pathname;
+                const queryParams = new URLSearchParams({
+                    gif: content.gif,
+                    audio: content.audio,
+                    quote: content.quote
+                });
+                const shareUrl = `${baseUrl}?${queryParams.toString()}`;
+
+                navigator.clipboard.writeText(shareUrl).then(() => {
+                    alert('Link copied to clipboard!');
+                }).catch(err => {
+                    console.error('Failed to copy link: ', err);
+                    alert('Could not copy link.');
+                });
+            }
+
             function wrapText(context, text, x, y, maxWidth, lineHeight) {
                 const words = text.split(' ');
                 let line = '';
-                let testLine;
-                let metrics;
-                
                 for (let n = 0; n < words.length; n++) {
-                    testLine = line + words[n] + ' ';
-                    metrics = context.measureText(testLine);
+                    const testLine = line + words[n] + ' ';
+                    const metrics = context.measureText(testLine);
                     if (metrics.width > maxWidth && n > 0) {
                         context.fillText(line, x, y);
                         line = words[n] + ' ';
@@ -215,21 +233,14 @@
                 context.fillText(line, x, y);
             }
 
-
             async function generateImageForAction(content, { isShare }) {
                 loadingOverlay.classList.remove('hidden');
                 loadingOverlay.classList.add('flex');
                 loadingProgress.textContent = 'Loading image...';
 
                 try {
-                    // Removed the proxy URL based on the assumption that
-                    // all GIF images are now served from the same origin.
                     const imageUrl = content.gif;
-
                     const image = new Image();
-                    // crossOrigin is set to "anonymous" to handle cases where the same-origin
-                    // server still requires CORS headers for canvas operations. If the images are
-                    // truly same-origin (same protocol, domain, and port), this can be removed.
                     image.crossOrigin = "anonymous";
                     image.src = imageUrl;
 
@@ -237,37 +248,24 @@
                         loadingProgress.textContent = 'Generating...';
                         const canvas = document.createElement('canvas');
                         const ctx = canvas.getContext('2d');
-                        
-                        // Set canvas dimensions to match the image
                         canvas.width = image.naturalWidth;
                         canvas.height = image.naturalHeight;
-
-                        // Draw the GIF (first frame) as the background
                         ctx.drawImage(image, 0, 0);
-
-                        // Add a semi-transparent overlay
                         ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
                         ctx.fillRect(0, 0, canvas.width, canvas.height);
-                        
-                        // Set text properties
                         const fontSize = Math.max(24, Math.floor(canvas.width / 15));
                         ctx.font = `bold ${fontSize}px sans-serif`;
                         ctx.fillStyle = 'white';
                         ctx.textAlign = 'center';
                         ctx.textBaseline = 'middle';
-
-                        // Add text shadow for better readability
                         ctx.shadowColor = 'black';
                         ctx.shadowOffsetX = 2;
                         ctx.shadowOffsetY = 2;
                         ctx.shadowBlur = 4;
-
-                        // Wrap and draw the text
                         const maxWidth = canvas.width * 0.9;
                         const lineHeight = fontSize * 1.2;
                         wrapText(ctx, content.quote, canvas.width / 2, canvas.height / 2, maxWidth, lineHeight);
                         
-                        // Convert canvas to blob to prepare for download/share
                         canvas.toBlob(async (blob) => {
                             const imageFile = new File([blob], 'inspirational-quote.png', { type: 'image/png' });
 
@@ -294,18 +292,14 @@
                         }, 'image/png');
                     };
 
-                    image.onerror = () => {
-                        throw new Error('Failed to load image for canvas.');
-                    };
-
+                    image.onerror = () => { throw new Error('Failed to load image for canvas.'); };
                 } catch (error) {
                     console.error('Error generating image:', error);
-                    alert('Could not generate the image. Please try again. Check the console for more details.');
+                    alert('Could not generate the image. Please try again.');
                     loadingOverlay.classList.add('hidden');
                     loadingOverlay.classList.remove('flex');
                 }
             }
-
 
             async function loadMoreContent() {
                 if (STATE.isFetching) return;
@@ -381,7 +375,19 @@
             //======================================================================
 
             async function init() {
-                await loadMoreContent(); // Initial load
+                // Check for shared content in the URL on page load.
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.has('gif') && urlParams.has('audio') && urlParams.has('quote')) {
+                    const sharedContent = {
+                        gif: urlParams.get('gif'),
+                        audio: urlParams.get('audio'),
+                        quote: urlParams.get('quote'),
+                    };
+                    // Add the shared content as the first item to be loaded.
+                    STATE.contentSources.push(sharedContent);
+                }
+
+                await loadMoreContent(); // Load the rest of the content from the API.
                 manageBuffer();
                 createMuteButton();
                 setupKeyboardControls();
