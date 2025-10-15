@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vertical Video Player</title>
     
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#000000"/>
+    <link rel="manifest" id="manifest">
+
     <!-- OpenGraph Metadata -->
     <meta property="og:title" content="Inspirational Moments" />
     <meta property="og:type" content="website" />
@@ -60,13 +64,111 @@
         document.addEventListener('DOMContentLoaded', () => {
             
             //======================================================================
+            // PWA SETUP (MANIFEST & SERVICE WORKER)
+            //======================================================================
+
+            // 1. Create and inject the Web App Manifest dynamically
+            const manifest = {
+              "name": "Inspirational Moments",
+              "short_name": "Moments",
+              "description": "A full-screen, vertical video player for motivational quotes, GIFs, and audio.",
+              "start_url": ".",
+              "display": "fullscreen",
+              "background_color": "#000000",
+              "theme_color": "#000000",
+              "icons": [
+                {
+                  "src": "https://placehold.co/192x192/ffffff/000000?text=IM",
+                  "sizes": "192x192",
+                  "type": "image/png",
+                  "purpose": "any maskable"
+                },
+                {
+                  "src": "https://placehold.co/512x512/ffffff/000000?text=IM",
+                  "sizes": "512x512",
+                  "type": "image/png",
+                   "purpose": "any maskable"
+                }
+              ]
+            };
+            const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+            const manifestURL = URL.createObjectURL(manifestBlob);
+            document.querySelector('#manifest').setAttribute('href', manifestURL);
+
+            // 2. Define and register the Service Worker
+            const swCode = `
+                const CACHE_NAME = 'content-cache-v1';
+                const APP_SHELL_URLS = ['/', 'https://cdn.tailwindcss.com'];
+                const MAX_MEDIA_CACHE_SIZE = 20; // 10 gifs + 10 audio clips
+
+                self.addEventListener('install', event => {
+                    event.waitUntil(
+                        caches.open(CACHE_NAME).then(cache => {
+                            console.log('Service Worker: Caching app shell');
+                            return cache.addAll(APP_SHELL_URLS);
+                        })
+                    );
+                    self.skipWaiting();
+                });
+
+                self.addEventListener('activate', event => {
+                    event.waitUntil(
+                        caches.keys().then(cacheNames => {
+                            return Promise.all(
+                                cacheNames.filter(name => name !== CACHE_NAME).map(name => caches.delete(name))
+                            );
+                        })
+                    );
+                    self.clients.claim();
+                });
+                
+                const trimCache = (cache) => {
+                    cache.keys().then(keys => {
+                        // Filter out app shell URLs so they are never deleted
+                        const mediaKeys = keys.filter(key => !APP_SHELL_URLS.includes(key.url));
+                        if (mediaKeys.length > MAX_MEDIA_CACHE_SIZE) {
+                            cache.delete(mediaKeys[0]).then(() => trimCache(cache));
+                        }
+                    });
+                };
+
+                self.addEventListener('fetch', event => {
+                    if (event.request.method !== 'GET' || !event.request.url.startsWith('http')) {
+                        return;
+                    }
+                    
+                    event.respondWith(
+                        caches.open(CACHE_NAME).then(cache => {
+                            return cache.match(event.request).then(cachedResponse => {
+                                const fetchPromise = fetch(event.request).then(networkResponse => {
+                                    if (networkResponse.ok) {
+                                        const responseToCache = networkResponse.clone();
+                                        cache.put(event.request, responseToCache);
+                                        trimCache(cache);
+                                    }
+                                    return networkResponse;
+                                });
+                                return cachedResponse || fetchPromise;
+                            });
+                        })
+                    );
+                });
+            `;
+            
+            if ('serviceWorker' in navigator) {
+                const swBlob = new Blob([swCode], { type: 'application/javascript' });
+                const swURL = URL.createObjectURL(swBlob);
+                navigator.serviceWorker.register(swURL)
+                    .then(registration => console.log('Service Worker registered with scope:', registration.scope))
+                    .catch(error => console.error('Service Worker registration failed:', error));
+            }
+
+            //======================================================================
             // CONFIGURATION & STATE MANAGEMENT
             //======================================================================
 
             const CONFIG = {
                 bufferRange: 2, // Number of slides to preload in each direction (up/down)
-                cacheName: 'content-cache-v1',
-                cacheLimit: 10 // Store the last 10 assets (10 gifs + 10 audio clips)
             };
 
             const STATE = {
@@ -92,33 +194,6 @@
                 copyLink: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>`
             };
             
-            //======================================================================
-            // CACHING LOGIC
-            //======================================================================
-
-            /**
-             * Fetches an asset, caches it, and ensures the cache does not exceed its size limit.
-             * @param {string} url - The URL of the asset to fetch and cache.
-             * @returns {Promise<Response>} - The response object for the asset.
-             */
-            async function fetchAndCache(url) {
-                const cache = await caches.open(CONFIG.cacheName);
-                const cachedResponse = await cache.match(url);
-                
-                if (cachedResponse) return cachedResponse;
-
-                const networkResponse = await fetch(url, { mode: 'cors' });
-                if (networkResponse.ok) {
-                    await cache.put(url, networkResponse.clone());
-                    // Clean up old cache entries if limit is exceeded
-                    const keys = await cache.keys();
-                    if (keys.length > CONFIG.cacheLimit * 2) { // *2 for gif and audio
-                        await cache.delete(keys[0]); 
-                    }
-                }
-                return networkResponse;
-            }
-
             //======================================================================
             // API & ASSET FETCHING
             //======================================================================
@@ -148,10 +223,10 @@
                 if (slide.querySelector('audio') || !content) return;
 
                 try {
-                    // Fetch assets from cache or network
+                    // Fetch assets (requests will be handled by the service worker)
                     const [gifResponse, audioResponse] = await Promise.all([
-                        fetchAndCache(content.gif),
-                        fetchAndCache(content.audio)
+                        fetch(content.gif, { mode: 'cors' }),
+                        fetch(content.audio, { mode: 'cors' })
                     ]);
 
                     const [gifBlob, audioBlob] = await Promise.all([
@@ -170,7 +245,7 @@
                     audio.playsInline = true;
                     audio.preload = 'auto';
                     audio.muted = STATE.isMuted;
-                    // ... rest of the function remains the same ...
+                    
                     const quoteContainer = document.createElement('div');
                     quoteContainer.className = 'absolute inset-0 flex items-center justify-center p-8 bg-black bg-opacity-40';
                     const quoteText = document.createElement('h1');
@@ -215,7 +290,6 @@
 
                 } catch (error) {
                     console.error("Failed to load content for slide:", error);
-                    // Optionally, show an error state on the slide itself
                 }
             }
 
@@ -370,8 +444,15 @@
                         if (!hasContent) addContentToSlide(slide, STATE.contentSources[index]);
                     } else {
                         if (hasContent) {
-                            const objectUrl = slide.querySelector('audio').src;
-                            URL.revokeObjectURL(objectUrl); // Clean up blob URL
+                            // Revoke object URLs to free up memory
+                            const audioSrc = slide.querySelector('audio')?.src;
+                            if (audioSrc && audioSrc.startsWith('blob:')) URL.revokeObjectURL(audioSrc);
+                            
+                            const bgImage = slide.style.backgroundImage;
+                            if (bgImage && bgImage.includes('blob:')) {
+                                const blobUrl = bgImage.slice(5, -2);
+                                URL.revokeObjectURL(blobUrl);
+                            }
                             slide.innerHTML = '';
                         }
                     }
@@ -408,7 +489,7 @@
             function requestAppFullScreen() {
                 const elem = document.documentElement;
                 if (elem.requestFullscreen) {
-                    elem.requestFullscreen();
+                    elem.requestFullscreen().catch(err => console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`));
                 } else if (elem.mozRequestFullScreen) { /* Firefox */
                     elem.mozRequestFullScreen();
                 } else if (elem.webkitRequestFullscreen) { /* Chrome, Safari & Opera */
